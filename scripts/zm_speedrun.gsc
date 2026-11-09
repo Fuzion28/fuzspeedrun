@@ -554,7 +554,7 @@ function menu_sr_setup()
     else if ( map == "zm_sat_mantis" )
     {
         // fixed splits, in quest order
-        sr.names = [ "Chalk", "Wonder Weapon Upgraded", "Symbols", "Soulbox", "Boss enter", "End" ];
+        sr.names = [ "Chalk", "Sundergat", "Symbols", "Soulbox", "Boss enter", "End" ];
         sr.flags = [ "chalk_picked_up", "wwu_weapon_retrieved", "music_notes_puzzle_completed", "sheet_music_delivered", "start_boss_fight", "boss_fight_done" ];
     }
     else if ( map == "zm_sat_scarab" )

@@ -19,7 +19,9 @@ local MARGIN_X=30          -- afstand tot de rechterrand van het scherm (pixels)
 local MARGIN_Y=225         -- afstand tot de bovenkant van het scherm; hoger getal = lager op het scherm
 local W=320                -- basisbreedte (wordt met SCALE vermenigvuldigd)
 local MIN_H=300            -- basishoogte; wordt groter als er meer splits zijn
-local FS=1.0               -- lettergrootte t.o.v. de rijen; laat op 1 staan
+local FS=1.06              -- lettergrootte van alle tekst (1 = basis)
+local TEXT_EDGE="outline"   -- zwarte rand om de letters: "outline" (rand), "shadow" (schaduw rechtsonder) of "none"
+local EDGE_PX=1.2          -- dikte van rand/schaduw in pixels
 local VIS=6                -- aantal zichtbare splits; bij meer scrolt de lijst mee
 local CHARW=0.57           -- gemiddelde letterbreedte (x tekengrootte) om rechts uit te lijnen; pas aan als
                            -- cijfers te ver links/rechts staan
@@ -109,10 +111,24 @@ end
 local function passive(element)
     call(element,"SetHandleMouse",false);call(element,"setFocusable",false)
 end
+-- zwarte kopieen van een tekst, iets verschoven achter de tekst zelf: geeft een rand of schaduw
+local EDGE_OFFSETS={}
+if TEXT_EDGE=="outline" then
+    EDGE_OFFSETS={{-EDGE_PX,-EDGE_PX},{EDGE_PX,-EDGE_PX},{-EDGE_PX,EDGE_PX},{EDGE_PX,EDGE_PX}}
+elseif TEXT_EDGE=="shadow" then
+    EDGE_OFFSETS={{EDGE_PX*1.4,EDGE_PX*1.4}}
+end
 local function place(node,x,y,w,h)
     call(node,"SetAnchorsAndPosition",0,1,0,1,x*SCALE,(x+w)*SCALE,y*SCALE,(y+h)*SCALE)
+    local copies=S.edge and S.edge[node]
+    if copies then
+        for i,c in ipairs(copies) do
+            local o=EDGE_OFFSETS[i]
+            call(c,"SetAnchorsAndPosition",0,1,0,1,(x+o[1])*SCALE,(x+w+o[1])*SCALE,(y+o[2])*SCALE,(y+h+o[2])*SCALE)
+        end
+    end
 end
-local function label(parent,x,y,w,h,size,rgb,bold)
+local function plainLabel(parent,x,y,w,h,size,rgb,bold)
     local element=newElement("UIStyledText")
     place(element,x,y,w,h)
     local fonts=rawget(_G,"FONT_HANDLE")
@@ -121,6 +137,21 @@ local function label(parent,x,y,w,h,size,rgb,bold)
     call(element,"SetFontSize",size*FS*SCALE*(tonumber(rawget(_G,"_PT")) or 1))
     call(element,"SetRGB",rgb);call(element,"SetAlignment",0)
     passive(element);call(parent,"addElement",element)
+    return element
+end
+local function label(parent,x,y,w,h,size,rgb,bold)
+    local copies
+    if #EDGE_OFFSETS>0 then
+        copies={}
+        for i,o in ipairs(EDGE_OFFSETS) do
+            copies[i]=plainLabel(parent,x+o[1],y+o[2],w,h,size,0x000000,bold)
+        end
+    end
+    local element=plainLabel(parent,x,y,w,h,size,rgb,bold)
+    if copies then
+        if not S.edge then S.edge={} end
+        S.edge[element]=copies
+    end
     return element
 end
 
@@ -196,14 +227,31 @@ local function list(dvar,pattern,numeric)
     return out
 end
 
+-- breedte per teken (in tekengroottes): cijfers breed, punt/dubbele punt smal. Zo klopt de plaats van de
+-- decimalen naast de grote timer; CHARW is een algemene correctie (groter = alles breder geschat).
 local function tw(text,size)
-    return #text*size*FS*CHARW
+    local em=0
+    for i=1,#text do
+        local ch=text:sub(i,i)
+        if ch=="1" then em=em+0.34
+        elseif ch:match("%d") then em=em+0.53
+        elseif ch==":" or ch=="." or ch=="," or ch==" " then em=em+0.28
+        elseif ch=="+" then em=em+0.55
+        elseif ch=="-" then em=em+0.38
+        elseif ch:match("%u") then em=em+0.46
+        else em=em+0.55 end
+    end
+    return em*size*FS*CHARW/0.57
 end
 -- zet tekst/kleur alleen als ze veranderd zijn
 local function put(el,text,rgb)
     local c=S.cache[el]
     if not c then c={};S.cache[el]=c end
-    if c.text~=text then call(el,"setText",text);c.text=text end
+    if c.text~=text then
+        call(el,"setText",text);c.text=text
+        local copies=S.edge and S.edge[el]
+        if copies then for _,e in ipairs(copies) do call(e,"setText",text) end end
+    end
     if rgb and c.rgb~=rgb then call(el,"SetRGB",rgb);c.rgb=rgb end
 end
 -- rechts uitgelijnd op x=right: positie volgt de tekstlengte
@@ -243,7 +291,7 @@ local HEIGHT=math.max(MIN_H,heightFor(VIS))
 
 local function clear()
     if S.frame then pcall(call,S.frame,"closeTree") end
-    S.frame=nil;S.parent=nil;S.rows=nil;S.title=nil;S.dbg=nil;S.rc=nil
+    S.frame=nil;S.parent=nil;S.rows=nil;S.title=nil;S.dbg=nil;S.rc=nil;S.edge=nil
     S.cache={}
 end
 

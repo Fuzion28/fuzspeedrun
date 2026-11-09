@@ -16,7 +16,7 @@ Speedrun mod for BO7 Zombies on Kronos: a timer and automatic splits for every m
 | **Astra Malorum** | LGM-1, Brain, Mars, Ritual, Caltheris |
 | **Kowakujo** | Cat, Mask, Noble, Poisons, Locations, Boss, End |
 | **Totenreich** | JOTUNN Star, Atomkraft core, Boss enter, End |
-| **Paradox Junction** | Chalk, Wonder Weapon Upgraded, Symbols, Soulbox, Boss enter, End |
+| **Paradox Junction** | Chalk, Sundergat, Symbols, Soulbox, Boss enter, End |
 | **Rex Infernus** | Pap, House, Vey Finish, Boss Enter, End |
 
 ## ⏸️ Pause menu options
