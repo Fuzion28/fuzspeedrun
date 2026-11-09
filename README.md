@@ -1,4 +1,4 @@
-# ⏱️ FuzSpeedrun v1.0
+# ⏱️ FuzSpeedrun v1.1
 
 Speedrun mod for BO7 Zombies on Kronos: a timer and automatic splits for every map, and nothing that changes a run.
 

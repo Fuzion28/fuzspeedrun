@@ -341,11 +341,11 @@ function menu_welcome()
     // what is loaded, shown on every load
     if ( isdefined( level.zmm_sr ) && level.zmm_sr.gums === "1" )
     {
-        self iprintlnbold( "^5FuzSpeedrun v1.0 ^7- ^3Infinite gums ON" );
+        self iprintlnbold( "^5FuzSpeedrun v1.1 ^7- ^3Infinite gums ON" );
     }
     else
     {
-        self iprintlnbold( "^5FuzSpeedrun v1.0 ^7- no cheats - ^2Normal game" );
+        self iprintlnbold( "^5FuzSpeedrun v1.1 ^7- no cheats - ^2Normal game" );
     }
     self iprintln( level.zmm_hint );
 }
@@ -1018,7 +1018,7 @@ function menu_sr_splice()
         }
         setdvar( @"zmm_session", sr.sid );
     }
-    setdvar( @"zmm_splice", sr.sid + " ^5#" + sr.att + " ^7FuzSpeedrun v1.0" );
+    setdvar( @"zmm_splice", sr.sid + " ^5#" + sr.att + " ^7FuzSpeedrun v1.1" );
 }
 
 function menu_pause_sync( key, value )
