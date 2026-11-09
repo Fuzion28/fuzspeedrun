@@ -1,0 +1,6 @@
+Nieuwe map toevoegen
+1. Kopieer lua\zm_split_zm_sat_locust_post.lua en hernoem hem naar zm_split_<mapnaam>_post.lua
+   (mapnamen: zm_sat_ruby, zm_sat_firefly, zm_sat_hornet, zm_sat_locust, zm_sat_mantis, zm_sat_scarab).
+2. Vul in het bestand de mapnaam (tussen de aanhalingstekens bij all["..."]), title en rename in.
+   Splitnamen die je niet in rename zet, blijven zoals het menu ze noemt.
+3. Zet het bestand naast zm_splitter_post.lua en start de game opnieuw.
