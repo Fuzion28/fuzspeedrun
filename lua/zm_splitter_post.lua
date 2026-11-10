@@ -20,7 +20,7 @@ local MARGIN_Y=225         -- afstand tot de bovenkant van het scherm; hoger get
 local W=320                -- basisbreedte (wordt met SCALE vermenigvuldigd)
 local MIN_H=300            -- basishoogte; wordt groter als er meer splits zijn
 local FS=1.06              -- lettergrootte van alle tekst (1 = basis)
-local TEXT_EDGE="outline"   -- zwarte rand om de letters: "outline" (rand), "shadow" (schaduw rechtsonder) of "none"
+local TEXT_EDGE="shadow"   -- zwarte rand om de letters: "outline" (rand), "shadow" (schaduw rechtsonder) of "none"
 local EDGE_PX=1.2          -- dikte van rand/schaduw in pixels
 local VIS=6                -- aantal zichtbare splits; bij meer scrolt de lijst mee
 local CHARW=0.57           -- gemiddelde letterbreedte (x tekengrootte) om rechts uit te lijnen; pas aan als

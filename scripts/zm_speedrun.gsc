@@ -64,7 +64,6 @@ autoexec init()
     level.zmm_initialized = 1;
     level.zmm_name = "FuzSpeedrun";
     level.zmm_footer = "[{+speed_throw}] Up   [{+attack}] Down   [{+activate}] OK   [{+melee}] Back";
-    level.zmm_hint = "Speedrun options are in the pause menu";
     level.zmm_visible = 12;
     level.zmm_themes = [ ( 0, 0.6, 1 ), ( 1, 0.2, 0.2 ), ( 0.2, 1, 0.35 ), ( 0.7, 0.3, 1 ), ( 1, 0.6, 0 ), ( 1, 0.85, 0.2 ) ];
     level.zmm_theme_names = [ "blue", "red", "green", "purple", "orange", "gold" ];
@@ -341,13 +340,12 @@ function menu_welcome()
     // what is loaded, shown on every load
     if ( isdefined( level.zmm_sr ) && level.zmm_sr.gums === "1" )
     {
-        self iprintlnbold( "^5FuzSpeedrun v1.1 ^7- ^3Infinite gums ON" );
+        self iprintlnbold( "^5FuzSpeedrun v1.2 ^7- ^3All Gums" );
     }
     else
     {
-        self iprintlnbold( "^5FuzSpeedrun v1.1 ^7- no cheats - ^2Normal game" );
+        self iprintlnbold( "^5FuzSpeedrun v1.2 ^7- ^2No Gums" );
     }
-    self iprintln( level.zmm_hint );
 }
 
 function menu_hud_destroy()
@@ -1018,7 +1016,7 @@ function menu_sr_splice()
         }
         setdvar( @"zmm_session", sr.sid );
     }
-    setdvar( @"zmm_splice", sr.sid + " ^5#" + sr.att + " ^7FuzSpeedrun v1.1" );
+    setdvar( @"zmm_splice", sr.sid + " ^5#" + sr.att + " ^7FuzSpeedrun v1.2" );
 }
 
 function menu_pause_sync( key, value )
