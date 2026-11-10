@@ -19,7 +19,7 @@ Speedrun mod for BO7 Zombies on Kronos: a timer and automatic splits for every m
 | **Paradox Junction** | Chalk, Sundergat, Symbols, Soulbox, Boss enter, End |
 | **Rex Infernus** | Pap, House, Vey Finish, Boss Enter, End |
 
-## ⏸️ Pause menu options
+## ⏸️ Pause menu options (ESC)
 - **Timer**: off, timer + splits, or timer only
 - **Infinite gums**
 - **Mode**: Easter Egg or Pack-a-Punch
@@ -33,7 +33,9 @@ Speedrun mod for BO7 Zombies on Kronos: a timer and automatic splits for every m
 `livesplit/fuzspeedrun.asl` starts and splits LiveSplit automatically. It only reads a file written by the mod, never the game's memory.
 
 ## 📦 Install
-Download the latest release and put the `fuzspeedrun` folder in your Kronos `mods` folder.
+Kronos launcher → **Workshop** → **FuzSpeedrun** → Install.
+
+Or download the latest release and put the `fuzspeedrun` folder in your Kronos `mods` folder.
 
 Use FuzSpeedrun **or** FuzMenu, not both at once: keep only one enabled.
 
