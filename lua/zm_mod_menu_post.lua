@@ -279,9 +279,20 @@ local function prTimer()
             else prSet("zmm_pshow","0") end
         end}
 end
+-- easter egg > pack-a-punch > round 5 > ... > round 100, the speedrun.com categories
+local MODES={"ee","pap","r5","r15","r30","r50","r70","r100"}
 local function prMode()
-    return {text=function() return read("zmm_pmode")=="pap" and "MODE: PACK-A-PUNCH" or "MODE: EASTER EGG" end,
-        press=function() prSet("zmm_pmode",read("zmm_pmode")=="pap" and "ee" or "pap") end}
+    return {text=function()
+            local m=read("zmm_pmode")
+            if m=="pap" then return "MODE: PACK-A-PUNCH" end
+            if m and m:match("^r%d+$") then return "MODE: ROUND "..m:sub(2) end
+            return "MODE: EASTER EGG"
+        end,
+        press=function()
+            local m,n=read("zmm_pmode"),1
+            for i,v in ipairs(MODES) do if v==m then n=i%#MODES+1 end end
+            prSet("zmm_pmode",MODES[n])
+        end}
 end
 local function prRefresh()
     for _,row in ipairs(PR.rows) do if row.set then row.set(row.label,row.text()) end end

@@ -608,7 +608,7 @@ function menu_sr_setup()
         sr.show = "1";
     }
     sr.mode = nengine_store_get( "fuzspeedrun", "mode" );
-    if ( !( sr.mode === "pap" ) )
+    if ( !( sr.mode === "pap" || sr.mode === "r5" || sr.mode === "r15" || sr.mode === "r30" || sr.mode === "r50" || sr.mode === "r70" || sr.mode === "r100" ) )
     {
         sr.mode = "ee";
     }
@@ -630,6 +630,11 @@ function menu_sr_done( index )
     if ( sr.flags[ index ] === "pap" )
     {
         return istrue( sr.pap_done );
+    }
+    // round mode: the split ends when round N starts
+    if ( istrue( sr.by_round ) )
+    {
+        return menu_current_round() >= sr.flags[ index ];
     }
     if ( sr.flags[ index ] === "vey_temples" )
     {
@@ -957,21 +962,70 @@ function menu_pause_save( key, value )
 function menu_sr_mode( sr )
 {
     sr.pb_key = sr.map;
-    if ( sr.mode != "pap" )
+    if ( sr.mode == "ee" )
     {
         return;
     }
-    sr.names = [ "PaP Taken" ];
-    sr.flags = [ "pap" ];
-    sr.pb_key = sr.map + "_pap";
+    sr.pb_key = sr.map + "_" + sr.mode;
+    if ( sr.mode == "pap" )
+    {
+        sr.names = [ "PaP Taken" ];
+        sr.flags = [ "pap" ];
+        // fired by the Pack-a-Punch machine when it upgrades a weapon
+        level callback::add( #"hash_eee96f780807d870", &menu_sr_on_pap );
+    }
+    else
+    {
+        // "r30" = reach round 30: R5 splits every round, R15 / R30 every 5, the longer ones every 10
+        target = int( getsubstr( sr.mode, 1 ) );
+        step = 10;
+        if ( target <= 5 )
+        {
+            step = 1;
+        }
+        else if ( target <= 30 )
+        {
+            step = 5;
+        }
+        sr.by_round = 1;
+        sr.names = [];
+        sr.flags = [];
+        for ( r = step; r <= target; r += step )
+        {
+            if ( r < 2 )
+            {
+                continue;
+            }
+            sr.names[ sr.names.size ] = "Round " + r;
+            sr.flags[ sr.flags.size ] = r;
+        }
+    }
     sr.pb = [];
     sr.pb_str = nengine_store_get( "fuzspeedrun", sr.pb_key );
     if ( isdefined( sr.pb_str ) && sr.pb_str != "" )
     {
-        sr.pb[ 0 ] = int( sr.pb_str );
+        foreach ( part in strtok( sr.pb_str, "," ) )
+        {
+            sr.pb[ sr.pb.size ] = int( part );
+        }
     }
-    // fired by the Pack-a-Punch machine when it upgrades a weapon
-    level callback::add( #"hash_eee96f780807d870", &menu_sr_on_pap );
+    if ( sr.pb.size != sr.flags.size )
+    {
+        sr.pb = [];
+    }
+}
+
+function menu_current_round()
+{
+    if ( isdefined( level.round_number ) )
+    {
+        return level.round_number;
+    }
+    if ( isdefined( level.var_6781718da4f78d1c ) && isdefined( level.var_6781718da4f78d1c.roundnumber ) )
+    {
+        return level.var_6781718da4f78d1c.roundnumber;
+    }
+    return 1;
 }
 
 function menu_sr_on_pap( params )
@@ -1095,7 +1149,7 @@ function zmsplit_join( arr, sep )
     return out;
 }
 
-// best segments: kept per key in the store ("<map>_best", or "<map>_pap_best" in PaP mode) as "ms,ms,..."
+// best segments: kept per key in the store ("<map>_best", "<map>_pap_best", "<map>_r30_best"...) as "ms,ms,..."
 // and updated each time a split ends faster than ever before
 function zmsplit_best_key( sr )
 {
