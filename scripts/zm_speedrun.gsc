@@ -662,6 +662,8 @@ function menu_sr_loop()
     {
         wait 0.05;
     }
+    // the run starts at the spawn
+    level.zm_rt_spawn = zm_rt_now();
     // level.mapname is read once the map is up
     if ( !menu_sr_setup() )
     {
@@ -676,15 +678,14 @@ function menu_sr_loop()
     {
         menu_sr_show();
     }
-    menu_sr_wait_move();
     menu_sr_count_attempt();
-    sr.start = gettime();
+    sr.start = level.zm_rt_spawn;
     menu_sr_live( "running" );
     while ( sr.index < sr.flags.size )
     {
         if ( menu_sr_done( sr.index ) )
         {
-            sr.times[ sr.index ] = gettime() - sr.start;
+            sr.times[ sr.index ] = zm_rt_now() - sr.start;
             iprintlnbold( "^2Split " + ( sr.index + 1 ) + "/" + sr.flags.size + " ^7" + sr.names[ sr.index ] + "  ^3" + menu_sr_time( sr.times[ sr.index ] ) + menu_sr_delta( sr.index ) );
             sr.index++;
             menu_sr_live( "running" );
@@ -780,14 +781,14 @@ function menu_sr_text()
     {
         return "^2DONE " + menu_sr_time( sr.times[ sr.times.size - 1 ] ) + menu_sr_delta( sr.times.size - 1 );
     }
-    sr.text = "^7#" + sr.att + " ^3" + menu_sr_time( gettime() - sr.start ) + "  ^7" + ( sr.index + 1 ) + "/" + sr.flags.size + " " + sr.names[ sr.index ];
+    sr.text = "^7#" + sr.att + " ^3" + menu_sr_time( zm_rt_now() - sr.start ) + "  ^7" + ( sr.index + 1 ) + "/" + sr.flags.size + " " + sr.names[ sr.index ];
     if ( sr.index > 0 )
     {
         sr.text = sr.text + "   ^7" + sr.names[ sr.index - 1 ] + " " + menu_sr_time( sr.times[ sr.index - 1 ] ) + menu_sr_delta( sr.index - 1 );
     }
     if ( sr.show == "0" )
     {
-        return "^7#" + sr.att + " ^3" + menu_sr_time( gettime() - sr.start );
+        return "^7#" + sr.att + " ^3" + menu_sr_time( zm_rt_now() - sr.start );
     }
     return sr.text;
 }
@@ -803,29 +804,6 @@ function menu_sr_show()
     {
         sr.host.zmm.toggles[ "speedrun" ] = 1;
         sr.host menu_apply_toggle( "speedrun" );
-    }
-}
-
-function menu_sr_wait_move()
-{
-    sr = level.zmm_sr;
-    sr.from = sr.host.origin;
-    sr.steps = 0;
-    // shortcut: the 5 steps make every timer start 0.25 s late, same for all runs; subtract it if runs must match real time
-    while ( isdefined( sr.host ) && sr.steps < 5 )
-    {
-        wait 0.05;
-        sr.delta = sr.host.origin - sr.from;
-        sr.from = sr.host.origin;
-        sr.moved = sr.delta[ 0 ] * sr.delta[ 0 ] + sr.delta[ 1 ] * sr.delta[ 1 ];
-        if ( sr.moved > 2 && sr.moved < 2500 )
-        {
-            sr.steps++;
-        }
-        else
-        {
-            sr.steps = 0;
-        }
     }
 }
 
@@ -1097,7 +1075,8 @@ function menu_sr_live( status )
 // Hands the speedrun data to zm_splitter_post.lua through dvars:
 //   zm_sr 1 = splits from this mod, 2 = still waiting, 0 = no splits for this map (own clock, F6 splits)
 //   zm_srmap map name, zm_srnames split names (|), zm_srpb PB times in ms (,), zm_srt finished split times in ms (,)
-//   zm_tms time in ms (0 until you move, stays at the last split when done)
+//   zm_tms real time in ms (0 until the spawn, stays at the last split when done), zm_trun 1 while it counts
+//   zm_rt / zm_rtq are written by the Lua: wall clock in ms, 1 when it is finer than a second
 function zmsplit_join( arr, sep )
 {
     out = "";
@@ -1213,12 +1192,15 @@ function zmsplit_bridge()
     setdvar( "zm_srbest", "" );
     setdvar( "zm_srt", "" );
     setdvar( "zm_split", 0 );
+    setdvar( "zm_trun", 0 );
+    setdvar( @"zm_rt", "0" );
+    setdvar( @"zm_rtq", "0" );
 
     while ( !isdefined( level.players ) || level.players.size == 0 )
     {
         waitframe();
     }
-    st.t0 = gettime();
+    st.t0 = zm_rt_now();
 
     while ( true )
     {
@@ -1265,26 +1247,57 @@ function zmsplit_bridge()
             if ( !isdefined( sr.start ) )
             {
                 setdvar( "zm_tms", 0 );
+                setdvar( "zm_trun", 0 );
             }
             else if ( sr.index >= sr.flags.size )
             {
                 setdvar( "zm_tms", sr.times[ sr.times.size - 1 ] );
+                setdvar( "zm_trun", 0 );
             }
             else
             {
-                setdvar( "zm_tms", gettime() - sr.start );
+                setdvar( "zm_tms", zm_rt_now() - sr.start );
+                setdvar( "zm_trun", 1 );
             }
         }
-        else if ( gettime() - st.t0 > 15000 )
+        else if ( zm_rt_now() - st.t0 > 15000 )
         {
             // no splits for this map: own clock from the spawn, split by hand with F6
             if ( !st.manual )
             {
                 st.manual = 1;
                 setdvar( "zm_sr", 0 );
+                setdvar( "zm_trun", 1 );
             }
-            setdvar( "zm_tms", gettime() - st.t0 );
+            setdvar( "zm_tms", zm_rt_now() - st.t0 );
         }
         waitframe();
     }
+}
+
+// real time (speedruns are timed in real time): gettime() stops while the game is paused,
+// so it follows the Lua wall clock zm_rt (every frame with a fine clock, past a 1.2 s slack with a whole-second one)
+// shortcut: a whole-second clock is off by up to 1.2 s, and gettime() alone is used without the Lua
+function zm_rt_now()
+{
+    if ( !isdefined( level.zm_rt_add ) )
+    {
+        level.zm_rt_add = 0;
+    }
+    level.zm_rt_wall = int( getdvar( @"zm_rt" ) );
+    if ( level.zm_rt_wall > 0 )
+    {
+        level.zm_rt_lag = level.zm_rt_wall - gettime();
+        if ( !isdefined( level.zm_rt_base ) )
+        {
+            level.zm_rt_base = level.zm_rt_lag;
+        }
+        level.zm_rt_off = level.zm_rt_lag - level.zm_rt_base - level.zm_rt_add;
+        level.zm_rt_slack = getdvar( @"zm_rtq" ) == "1" ? 0 : 1200;
+        if ( level.zm_rt_off > level.zm_rt_slack || level.zm_rt_off < 0 - level.zm_rt_slack )
+        {
+            level.zm_rt_add = level.zm_rt_lag - level.zm_rt_base;
+        }
+    }
+    return gettime() + level.zm_rt_add;
 }

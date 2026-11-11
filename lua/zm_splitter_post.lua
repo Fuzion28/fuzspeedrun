@@ -561,6 +561,32 @@ local function render(view)
     put(S.dbg,SHOW_KEYS and ("toets: "..(S.lastKey or "-")) or "",DIM)
 end
 
+-- echte tijd voor de GSC (zm_rt, ms): loopt door als het spel pauzeert, gettime() niet
+-- os.clock is op Windows de wandklok sinds de start van het spel; anders Engine.GetSystemTime (seconden)
+local RT=rawget(_G,"ZmRealTime") or {}
+rawset(_G,"ZmRealTime",RT)
+local function wallMs()
+    if type(os)=="table" and type(os.clock)=="function" then
+        local ok,c=pcall(os.clock)
+        if ok and type(c)=="number" then RT.fine=true;return c*1000 end
+    end
+    local ok,sec=pcall(invoke,rawget(_G,"Engine"),"GetSystemTime")
+    if ok and type(sec)=="number" then
+        if sec~=math.floor(sec) then RT.fine=true end
+        return sec*1000
+    end
+end
+local function writeRealTime()
+    local now=wallMs()
+    if not now then return end
+    if not RT.base then RT.base=now end
+    local set=get(rawget(_G,"Dvar"),"SetDvarString")
+    if type(set)~="function" then return now end
+    pcall(set,HD("zm_rt"),tostring(math.floor(now-RT.base)+1))
+    pcall(set,HD("zm_rtq"),RT.fine and "1" or "0")
+    return now
+end
+
 local function tick()
     S.ticks=S.ticks+1
     -- F8: map_fast_restart
@@ -574,9 +600,20 @@ local function tick()
         newRun();S.lastMs=0;S.splitRequest=false;S.undoRequest=false;S.raw={}
         return
     end
+    local now=writeRealTime()
     local ms=tonumber(read("zm_tms") or "")
     local parent=displayParent()
     if not ms or not parent then return end
+    -- de GSC schrijft zm_tms per server-frame en niet tijdens de pauze: tussendoor loopt de timer
+    -- hier verder op de wandklok, elke frame, en nooit terug (een nieuwe run zakt meer dan 1 s)
+    if ms~=S.rtMs or not now then S.rtMs=ms;S.rtAt=now end
+    if read("zm_trun")=="1" and now and S.rtAt then
+        local shown=ms+math.floor(now-S.rtAt)
+        if S.shown and shown<S.shown and shown>S.shown-1000 then shown=S.shown end
+        S.shown=shown;ms=shown
+    else
+        S.shown=nil
+    end
     local mode=read("zm_sr")
     -- de GSC wacht nog op de splits van het menu (net na het laden): nog niets tonen
     if mode=="2" then
