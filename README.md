@@ -1,4 +1,4 @@
-# ⏱️ FuzSpeedrun v1.2
+# ⏱️ FuzSpeedrun v1.4
 
 Speedrun mod for BO7 Zombies on Kronos: a timer and automatic splits for every map, and nothing that changes a run.
 
@@ -22,7 +22,7 @@ Speedrun mod for BO7 Zombies on Kronos: a timer and automatic splits for every m
 ## ⏸️ Pause menu options (ESC)
 - **Timer**: off, timer + splits, or timer only
 - **Infinite gums**
-- **Mode**: Easter Egg or Pack-a-Punch
+- **Mode**: Easter Egg, Pack-a-Punch, or Round 5 / 15 / 30 / 50 / 70 / 100 (splits every round for R5, every 5 rounds for R15 and R30, every 10 rounds after; the time stops when round N starts)
 - **Start speedrun**: restarts the map for a fresh run
 
 ## ⌨️ Keys

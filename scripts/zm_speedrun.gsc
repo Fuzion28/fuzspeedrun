@@ -340,11 +340,11 @@ function menu_welcome()
     // what is loaded, shown on every load
     if ( isdefined( level.zmm_sr ) && level.zmm_sr.gums === "1" )
     {
-        self iprintlnbold( "^5FuzSpeedrun v1.2 ^7- ^3All Gums" );
+        self iprintlnbold( "^5FuzSpeedrun v1.4 ^7- ^3All Gums" );
     }
     else
     {
-        self iprintlnbold( "^5FuzSpeedrun v1.2 ^7- ^2No Gums" );
+        self iprintlnbold( "^5FuzSpeedrun v1.4 ^7- ^2No Gums" );
     }
 }
 
@@ -1048,7 +1048,7 @@ function menu_sr_splice()
         }
         setdvar( @"zmm_session", sr.sid );
     }
-    setdvar( @"zmm_splice", sr.sid + " ^5#" + sr.att + " ^7FuzSpeedrun v1.2" );
+    setdvar( @"zmm_splice", sr.sid + " ^5#" + sr.att + " ^7FuzSpeedrun v1.4" );
 }
 
 function menu_pause_sync( key, value )
