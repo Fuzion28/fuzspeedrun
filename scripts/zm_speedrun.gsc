@@ -340,11 +340,11 @@ function menu_welcome()
     // what is loaded, shown on every load
     if ( isdefined( level.zmm_sr ) && level.zmm_sr.gums === "1" )
     {
-        self iprintlnbold( "^5FuzSpeedrun v1.5 ^7- ^3All Gums" );
+        self iprintlnbold( "^5FuzSpeedrun v1.6 ^7- ^3All Gums" );
     }
     else
     {
-        self iprintlnbold( "^5FuzSpeedrun v1.5 ^7- ^2No Gums" );
+        self iprintlnbold( "^5FuzSpeedrun v1.6 ^7- ^2No Gums" );
     }
 }
 
@@ -716,9 +716,25 @@ function menu_sr_loop()
     menu_sr_live( "running" );
     while ( sr.index < sr.flags.size )
     {
+        // last EE split: the end flag comes with the cutscene, but the run ends when the boss dies
+        if ( sr.mode == "ee" && sr.index == sr.flags.size - 1 )
+        {
+            if ( menu_sr_boss_alive() )
+            {
+                sr.boss_dead_at = undefined;
+            }
+            else if ( !isdefined( sr.boss_dead_at ) && istrue( sr.boss_seen ) )
+            {
+                sr.boss_dead_at = zm_rt_now();
+            }
+        }
         if ( menu_sr_done( sr.index ) )
         {
             sr.times[ sr.index ] = zm_rt_now() - sr.start;
+            if ( sr.mode == "ee" && sr.index == sr.flags.size - 1 && isdefined( sr.boss_dead_at ) )
+            {
+                sr.times[ sr.index ] = sr.boss_dead_at - sr.start;
+            }
             iprintlnbold( "^2Split " + ( sr.index + 1 ) + "/" + sr.flags.size + " ^7" + sr.names[ sr.index ] + "  ^3" + menu_sr_time( sr.times[ sr.index ] ) + menu_sr_delta( sr.index ) );
             sr.index++;
             menu_sr_live( "running" );
@@ -742,6 +758,52 @@ function menu_sr_loop()
         nengine_store_save( "fuzspeedrun", "speedrun" );
         iprintlnbold( "^2New PB: " + menu_sr_time( sr.times[ sr.times.size - 1 ] ) );
     }
+}
+
+// the boss AIs FuzMenu knows, per map; Astra's Uranus dies before Neptune spawns, so a later boss resets the death time
+function menu_sr_boss_alive()
+{
+    sr = level.zmm_sr;
+    bosses = [];
+    if ( isdefined( level.var_302bd0b94da202e7 ) )
+    {
+        bosses[ bosses.size ] = level.var_302bd0b94da202e7.entity;
+    }
+    if ( isdefined( level.var_703ffbe28e244b74 ) )
+    {
+        bosses[ bosses.size ] = level.var_703ffbe28e244b74.entity;
+    }
+    if ( isdefined( level.var_4630353ece991c26 ) )
+    {
+        bosses[ bosses.size ] = level.var_4630353ece991c26.entity;
+    }
+    if ( isdefined( level.var_d61ad599a05754c7 ) )
+    {
+        bosses[ bosses.size ] = level.var_d61ad599a05754c7.var_469a4c6b75d9c6cd;
+    }
+    bosses[ bosses.size ] = level.var_99042256ee32a16d;
+    bosses[ bosses.size ] = level.zombie_neptune;
+    team = "team_two_hundred";
+    if ( isdefined( level.zombie_team ) )
+    {
+        team = level.zombie_team;
+    }
+    foreach ( ai in getaiarray( team ) )
+    {
+        if ( isdefined( ai ) && ai.var_e4312c2c1a4a2190 === "boss" )
+        {
+            bosses[ bosses.size ] = ai;
+        }
+    }
+    foreach ( boss in bosses )
+    {
+        if ( isdefined( boss ) && isalive( boss ) )
+        {
+            sr.boss_seen = 1;
+            return true;
+        }
+    }
+    return false;
 }
 
 function menu_sr_someone_playing()
@@ -1076,7 +1138,7 @@ function menu_sr_splice()
         }
         setdvar( @"zmm_session", sr.sid );
     }
-    setdvar( @"zmm_splice", sr.sid + " ^5#" + sr.att + " ^7FuzSpeedrun v1.5" );
+    setdvar( @"zmm_splice", sr.sid + " ^5#" + sr.att + " ^7FuzSpeedrun v1.6" );
 }
 
 function menu_pause_sync( key, value )
