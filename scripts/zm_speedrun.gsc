@@ -340,11 +340,11 @@ function menu_welcome()
     // what is loaded, shown on every load
     if ( isdefined( level.zmm_sr ) && level.zmm_sr.gums === "1" )
     {
-        self iprintlnbold( "^5FuzSpeedrun v1.4 ^7- ^3All Gums" );
+        self iprintlnbold( "^5FuzSpeedrun v1.5 ^7- ^3All Gums" );
     }
     else
     {
-        self iprintlnbold( "^5FuzSpeedrun v1.4 ^7- ^2No Gums" );
+        self iprintlnbold( "^5FuzSpeedrun v1.5 ^7- ^2No Gums" );
     }
 }
 
@@ -660,6 +660,34 @@ function menu_sr_restart()
     return 1;
 }
 
+function menu_sr_wait_move()
+{
+    sr = level.zmm_sr;
+    sr.from = sr.host.origin;
+    sr.steps = 0;
+    sr.moved_at = zm_rt_now();
+    // 5 steps in a row filter out the spawn settling, but the run is timed from the first one
+    while ( isdefined( sr.host ) && sr.steps < 5 )
+    {
+        waitframe();
+        sr.delta = sr.host.origin - sr.from;
+        sr.from = sr.host.origin;
+        sr.moved = sr.delta[ 0 ] * sr.delta[ 0 ] + sr.delta[ 1 ] * sr.delta[ 1 ];
+        if ( sr.moved > 2 && sr.moved < 2500 )
+        {
+            if ( sr.steps == 0 )
+            {
+                sr.moved_at = zm_rt_now();
+            }
+            sr.steps++;
+        }
+        else
+        {
+            sr.steps = 0;
+        }
+    }
+}
+
 function menu_sr_loop()
 {
     level endon( #"game_ended" );
@@ -667,8 +695,6 @@ function menu_sr_loop()
     {
         wait 0.05;
     }
-    // the run starts at the spawn
-    level.zm_rt_spawn = zm_rt_now();
     // level.mapname is read once the map is up
     if ( !menu_sr_setup() )
     {
@@ -684,7 +710,9 @@ function menu_sr_loop()
         menu_sr_show();
     }
     menu_sr_count_attempt();
-    sr.start = level.zm_rt_spawn;
+    // the run starts when the host moves, not at the spawn (the spawn comes ~30 s before control)
+    menu_sr_wait_move();
+    sr.start = sr.moved_at;
     menu_sr_live( "running" );
     while ( sr.index < sr.flags.size )
     {
@@ -1048,7 +1076,7 @@ function menu_sr_splice()
         }
         setdvar( @"zmm_session", sr.sid );
     }
-    setdvar( @"zmm_splice", sr.sid + " ^5#" + sr.att + " ^7FuzSpeedrun v1.4" );
+    setdvar( @"zmm_splice", sr.sid + " ^5#" + sr.att + " ^7FuzSpeedrun v1.5" );
 }
 
 function menu_pause_sync( key, value )
@@ -1129,7 +1157,7 @@ function menu_sr_live( status )
 // Hands the speedrun data to zm_splitter_post.lua through dvars:
 //   zm_sr 1 = splits from this mod, 2 = still waiting, 0 = no splits for this map (own clock, F6 splits)
 //   zm_srmap map name, zm_srnames split names (|), zm_srpb PB times in ms (,), zm_srt finished split times in ms (,)
-//   zm_tms real time in ms (0 until the spawn, stays at the last split when done), zm_trun 1 while it counts
+//   zm_tms real time in ms (0 until you move, stays at the last split when done), zm_trun 1 while it counts
 //   zm_rt / zm_rtq are written by the Lua: wall clock in ms, 1 when it is finer than a second
 function zmsplit_join( arr, sep )
 {

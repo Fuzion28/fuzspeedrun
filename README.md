@@ -1,11 +1,11 @@
-# ⏱️ FuzSpeedrun v1.4
+# ⏱️ FuzSpeedrun v1.5
 
 Speedrun mod for BO7 Zombies on Kronos: a timer and automatic splits for every map, and nothing that changes a run.
 
 ## 📊 Split panel
 - LiveSplit-style panel on the right side of the screen
 - Big timer, current split highlighted, deltas against your PB, best segments
-- The timer starts when you spawn and counts real time: it keeps running while the game is paused
+- The timer starts when you start moving and counts real time: it keeps running while the game is paused
 - Personal bests and best segments are saved per map
 
 ## 🗺️ Splits
