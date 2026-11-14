@@ -358,10 +358,51 @@ local function spliceStep()
     call(label(S.splice,0,0,500,26,18,0xffffff),"setText",text)
     call(S.splice,"SetAlpha",.35)
 end
+-- enabled mods of the Kronos library; GetMods' layout is undocumented, so strings and {name,enabled} tables both count
+local function modNames()
+    local ok,list=pcall(invoke,C,"GetMods")
+    if not ok or type(list)~="table" then return nil end
+    local names={}
+    for k,v in pairs(list) do
+        local name,on=nil,true
+        if type(v)=="table" then
+            name=get(v,"name") or get(v,"folder") or get(v,"id")
+            local e=get(v,"enabled")
+            if e~=nil then on=(e==true or e==1 or e=="1") end
+        elseif type(v)=="string" then name=v
+        elseif type(v)=="boolean" and type(k)=="string" then name,on=k,v end
+        if name and on then names[#names+1]=tostring(name) end
+    end
+    return names
+end
+-- shown for ~8 s (60 ticks/s) when a match loads, just above the watermark
+local function modsStep()
+    if not inMatch() then
+        if S.mods then pcall(call,S.mods,"closeTree") end
+        S.mods=nil;S.modsAt=nil;return
+    end
+    if S.modsAt then
+        if S.mods and S.ticks-S.modsAt>480 then pcall(call,S.mods,"closeTree");S.mods=nil end
+        return
+    end
+    local parent=displayParent()
+    if not parent then return end
+    S.modsAt=S.ticks
+    local names=modNames()
+    local log=rawget(_G,"DebugPrint")
+    if type(log)=="function" then pcall(log,"fuzspeedrun mods: "..(names and table.concat(names,", ") or "GetMods unavailable")) end
+    if not names or #names==0 then return end
+    S.mods=newElement("UIElement")
+    call(S.mods,"setPriority",1000);passive(S.mods);call(parent,"addElement",S.mods)
+    call(S.mods,"SetAnchorsAndPosition",0,1,1,0,20,1020,-62,-36)
+    call(label(S.mods,0,0,1000,26,18,0xffffff),"setText","Mods: "..table.concat(names,", "))
+    call(S.mods,"SetAlpha",.6)
+end
 local function tick()
     S.ticks=S.ticks+1
     pcall(prStep)
     pcall(spliceStep)
+    pcall(modsStep)
     -- the GSC writes dvars every 50 ms at most: a third of the rate while closed; %3==1 keeps the %30==1 zmm_lua beat below
     if not S.visible and S.ticks%3~=1 then return end
     if not inMatch() then if S.frame then clear() end;S.hud=nil;S.hudText=nil;S.big=nil;S.bigText=nil;return end

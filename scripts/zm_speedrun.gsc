@@ -340,11 +340,11 @@ function menu_welcome()
     // what is loaded, shown on every load
     if ( isdefined( level.zmm_sr ) && level.zmm_sr.gums === "1" )
     {
-        self iprintlnbold( "^5FuzSpeedrun v1.6 ^7- ^3All Gums" );
+        self iprintlnbold( "^5FuzSpeedrun v1.7 ^7- ^3All Gums" );
     }
     else
     {
-        self iprintlnbold( "^5FuzSpeedrun v1.6 ^7- ^2No Gums" );
+        self iprintlnbold( "^5FuzSpeedrun v1.7 ^7- ^2No Gums" );
     }
 }
 
@@ -1028,6 +1028,15 @@ function menu_pause_cmds()
         {
             sr.mode = getdvar( @"zmm_pmode" );
             menu_pause_save( "mode", sr.mode );
+            // before the first split the new mode takes over this run, after it the next run
+            if ( sr.index == 0 )
+            {
+                menu_sr_mode( sr );
+            }
+            else
+            {
+                sr.host iprintlnbold( "^3New mode starts with the next run (Start speedrun)" );
+            }
         }
         sr.p_cmd = getdvar( @"zmm_paction" );
         if ( sr.p_cmd != "" && !( sr.p_cmd === sr.p_last ) )
@@ -1051,21 +1060,31 @@ function menu_pause_save( key, value )
 
 function menu_sr_mode( sr )
 {
-    sr.pb_key = sr.map;
-    if ( sr.mode == "ee" )
+    // the map's EE splits, kept so the pause menu can switch back to them
+    if ( !isdefined( sr.ee_names ) )
     {
-        return;
+        sr.ee_names = sr.names;
+        sr.ee_flags = sr.flags;
     }
-    sr.pb_key = sr.map + "_" + sr.mode;
+    sr.names = sr.ee_names;
+    sr.flags = sr.ee_flags;
+    sr.by_round = undefined;
+    sr.pb_key = sr.map;
     if ( sr.mode == "pap" )
     {
+        sr.pb_key = sr.map + "_pap";
         sr.names = [ "PaP Taken" ];
         sr.flags = [ "pap" ];
         // fired by the Pack-a-Punch machine when it upgrades a weapon
-        level callback::add( #"hash_eee96f780807d870", &menu_sr_on_pap );
+        if ( !istrue( sr.pap_hooked ) )
+        {
+            sr.pap_hooked = 1;
+            level callback::add( #"hash_eee96f780807d870", &menu_sr_on_pap );
+        }
     }
-    else
+    else if ( sr.mode != "ee" )
     {
+        sr.pb_key = sr.map + "_" + sr.mode;
         // "r30" = reach round 30: R5 splits every round, R15 / R30 every 5, the longer ones every 10
         target = int( getsubstr( sr.mode, 1 ) );
         step = 10;
@@ -1138,7 +1157,7 @@ function menu_sr_splice()
         }
         setdvar( @"zmm_session", sr.sid );
     }
-    setdvar( @"zmm_splice", sr.sid + " ^5#" + sr.att + " ^7FuzSpeedrun v1.6" );
+    setdvar( @"zmm_splice", sr.sid + " ^5#" + sr.att + " ^7FuzSpeedrun v1.7" );
 }
 
 function menu_pause_sync( key, value )
