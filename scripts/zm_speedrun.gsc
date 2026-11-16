@@ -340,11 +340,11 @@ function menu_welcome()
     // what is loaded, shown on every load
     if ( isdefined( level.zmm_sr ) && level.zmm_sr.gums === "1" )
     {
-        self iprintlnbold( "^5FuzSpeedrun v1.7 ^7- ^3All Gums" );
+        self iprintlnbold( "^5FuzSpeedrun v1.8 ^7- ^3All Gums" );
     }
     else
     {
-        self iprintlnbold( "^5FuzSpeedrun v1.7 ^7- ^2No Gums" );
+        self iprintlnbold( "^5FuzSpeedrun v1.8 ^7- ^2No Gums" );
     }
 }
 
@@ -730,11 +730,7 @@ function menu_sr_loop()
         }
         if ( menu_sr_done( sr.index ) )
         {
-            sr.times[ sr.index ] = zm_rt_now() - sr.start;
-            if ( sr.mode == "ee" && sr.index == sr.flags.size - 1 && isdefined( sr.boss_dead_at ) )
-            {
-                sr.times[ sr.index ] = sr.boss_dead_at - sr.start;
-            }
+            sr.times[ sr.index ] = menu_sr_now() - sr.start;
             iprintlnbold( "^2Split " + ( sr.index + 1 ) + "/" + sr.flags.size + " ^7" + sr.names[ sr.index ] + "  ^3" + menu_sr_time( sr.times[ sr.index ] ) + menu_sr_delta( sr.index ) );
             sr.index++;
             menu_sr_live( "running" );
@@ -760,10 +756,36 @@ function menu_sr_loop()
     }
 }
 
+// the clock, frozen from the boss death until the end flag
+function menu_sr_now()
+{
+    sr = level.zmm_sr;
+    if ( isdefined( sr.boss_dead_at ) && sr.mode == "ee" && sr.index == sr.flags.size - 1 )
+    {
+        return sr.boss_dead_at;
+    }
+    return zm_rt_now();
+}
+
 // the boss AIs FuzMenu knows, per map; Astra's Uranus dies before Neptune spawns, so a later boss resets the death time
 function menu_sr_boss_alive()
 {
     sr = level.zmm_sr;
+    // the game's boss health bar: while it is up, each player points at the boss it shows
+    // (cleared when the bar hides, before the AI itself dies and the cutscene starts)
+    foreach ( player in level.players )
+    {
+        if ( isdefined( player.var_7fa280bb4c563541 ) )
+        {
+            sr.bar_seen = 1;
+            sr.boss_seen = 1;
+            return true;
+        }
+    }
+    if ( istrue( sr.bar_seen ) )
+    {
+        return false;
+    }
     bosses = [];
     if ( isdefined( level.var_302bd0b94da202e7 ) )
     {
@@ -876,14 +898,14 @@ function menu_sr_text()
     {
         return "^2DONE " + menu_sr_time( sr.times[ sr.times.size - 1 ] ) + menu_sr_delta( sr.times.size - 1 );
     }
-    sr.text = "^7#" + sr.att + " ^3" + menu_sr_time( zm_rt_now() - sr.start ) + "  ^7" + ( sr.index + 1 ) + "/" + sr.flags.size + " " + sr.names[ sr.index ];
+    sr.text = "^7#" + sr.att + " ^3" + menu_sr_time( menu_sr_now() - sr.start ) + "  ^7" + ( sr.index + 1 ) + "/" + sr.flags.size + " " + sr.names[ sr.index ];
     if ( sr.index > 0 )
     {
         sr.text = sr.text + "   ^7" + sr.names[ sr.index - 1 ] + " " + menu_sr_time( sr.times[ sr.index - 1 ] ) + menu_sr_delta( sr.index - 1 );
     }
     if ( sr.show == "0" )
     {
-        return "^7#" + sr.att + " ^3" + menu_sr_time( zm_rt_now() - sr.start );
+        return "^7#" + sr.att + " ^3" + menu_sr_time( menu_sr_now() - sr.start );
     }
     return sr.text;
 }
@@ -1157,7 +1179,7 @@ function menu_sr_splice()
         }
         setdvar( @"zmm_session", sr.sid );
     }
-    setdvar( @"zmm_splice", sr.sid + " ^5#" + sr.att + " ^7FuzSpeedrun v1.7" );
+    setdvar( @"zmm_splice", sr.sid + " ^5#" + sr.att + " ^7Speedrun v1.8" );
 }
 
 function menu_pause_sync( key, value )
@@ -1419,8 +1441,8 @@ function zmsplit_bridge()
             }
             else
             {
-                setdvar( "zm_tms", zm_rt_now() - sr.start );
-                setdvar( "zm_trun", 1 );
+                setdvar( "zm_tms", menu_sr_now() - sr.start );
+                setdvar( "zm_trun", !isdefined( sr.boss_dead_at ) );
             }
         }
         else if ( zm_rt_now() - st.t0 > 15000 )

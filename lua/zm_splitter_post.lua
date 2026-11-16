@@ -38,6 +38,9 @@ local ROWH=26
 local GREEN,LGREEN,LRED,RED=0x00cc36,0x52cc73,0xfc7064,0xff1700
 local CURRENT,PBBLUE,DIM,WHITE,IDLE=0x3373f4,0x16a6ff,0x9a9ea6,0xffffff,0xacacac
 local GOLD=0xd8af1f      -- split die je snelste segment ooit was (BestSegmentColor uit je .lsl)
+local GOLD_WHEN_BEHIND=false   -- true = ook goud als je totaal achterloopt maar dit stuk wel je snelste ooit was (zoals LiveSplit)
+local LIVE_WINDOW=30000     -- ms voor de PB-tijd van de huidige split waarop de live delta begint te verkleuren naar rood
+local LIVE_FROM=0xffffff       -- beginkleur van de live delta (wit)
 
 local C=rawget(_G,"CLUA")
 local H=rawget(_G,"xhash") or rawget(_G,"PushXHash") or (type(C)=="table" and C.PushXHash)
@@ -398,6 +401,18 @@ local function deltaColor(view,idx,d)
     return gaining and LRED or RED
 end
 
+-- live delta op de huidige split: vanaf LIVE_WINDOW ms voor de PB-tijd van die split verschijnt hij en kleurt
+-- hij geleidelijk van wit naar rood; op de PB-tijd (en daarna) is hij helemaal rood
+local function liveColor(d)
+    local t=1+d/LIVE_WINDOW
+    if t<0 then t=0 elseif t>1 then t=1 end
+    local function ch(shift)
+        local from=math.floor(LIVE_FROM/shift)%256
+        local to=math.floor(RED/shift)%256
+        return math.floor(from+(to-from)*t+0.5)
+    end
+    return ch(65536)*65536+ch(256)*256+ch(1)
+end
 local function displayName(view,idx)
     local original=view.names[idx]
     local cfg=view.cfg
@@ -446,7 +461,9 @@ local function render(view)
                         -- goud: dit segment was je snelste ooit (de mod heeft het beste segment al bijgewerkt)
                         local b=view.best and view.best[idx]
                         local seg=view.times[idx]-(idx>1 and view.times[idx-1] or 0)
-                        if b and b>0 and seg<=b then drgb=GOLD end
+                        -- EN sneller dan het segment van je PB; wie op dit stuk verliest, krijgt nooit goud
+                        local pprev=idx>1 and validPb(view,idx-1) or 0
+                        if b and b>0 and seg<=b and pprev and seg<p-pprev and (d<0 or GOLD_WHEN_BEHIND) then drgb=GOLD end
                     end
                     ttext=fmtSec(view.times[idx])
                 end
@@ -454,7 +471,7 @@ local function render(view)
                 ttext=p and fmtSec(p) or "-"
                 if idx==done+1 then
                     isCurrent=true
-                    if p and shown>p then dtext=fmtDelta(shown-p);drgb=RED end
+                    if p and shown>p-LIVE_WINDOW then dtext=fmtDelta(shown-p);drgb=liveColor(shown-p) end
                 end
             end
         end
@@ -646,6 +663,12 @@ local function timerRoot()
 end
 local function ensureTimer()
     if not S.enabled then return end
+    -- in het hoofdmenu draait er niets van ons: geen verborgen element en geen timer (voorkomt dat het
+    -- terugkeren naar het menu of het laden van een andere map vastloopt)
+    if not inMatch() then
+        if S.host then pcall(call,S.host,"closeTree");S.host=nil end
+        return
+    end
     local root=timerRoot()
     if not root then return end
     local okParent,parent=pcall(call,S.host,"getParent")
@@ -663,6 +686,12 @@ local function ensureTimer()
                 if not S.enabled or S.host~=host then return end
                 local ok=pcall(tick)
                 if not ok then clear() end
+                -- uit de match: opruimen en stoppen; de eerstvolgende toetsaanslag in een match start het weer
+                if not inMatch() then
+                    pcall(call,host,"closeTree")
+                    if S.host==host then S.host=nil end
+                    return
+                end
                 pcall(schedule)
             end
         end
