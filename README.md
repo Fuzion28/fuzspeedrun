@@ -22,6 +22,7 @@ Speedrun mod for BO7 Zombies on Kronos: a timer and automatic splits for every m
 ## ⏸️ Pause menu options (ESC)
 - **Timer**: off, timer + splits, or timer only
 - **Infinite gums**
+- **FOV 110**: FOV 110 with FOV scale 1.2, saved between launches
 - **Mode**: Easter Egg, Pack-a-Punch, or Round 5 / 15 / 30 / 50 / 70 / 100 (splits every round for R5, every 5 rounds for R15 and R30, every 10 rounds after; the time stops when round N starts)
 - **Start speedrun**: restarts the map for a fresh run
 
