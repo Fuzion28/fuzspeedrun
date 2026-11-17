@@ -70,7 +70,7 @@ autoexec init()
     // zm_mod_menu_post.lua draws the menu from zmm_view and sets zmm_lua to "1"
     setdvar( @"zmm_view", "" );
     setdvar( @"zmm_lua", "" );
-    setdvar( @"zmm_exec", "" ); setdvar( @"zmm_ptimer", "" ); setdvar( @"zmm_pgums", "" ); setdvar( @"zmm_paction", "" ); setdvar( @"zmm_pshow", "" ); setdvar( @"zmm_pmode", "" ); setdvar( @"zmm_splice", "" );
+    setdvar( @"zmm_exec", "" ); setdvar( @"zmm_ptimer", "" ); setdvar( @"zmm_pgums", "" ); setdvar( @"zmm_paction", "" ); setdvar( @"zmm_pshow", "" ); setdvar( @"zmm_pmode", "" ); setdvar( @"zmm_pfov", "" ); setdvar( @"zmm_splice", "" );
     setdvar( @"zmm_hud", "" );
     setdvar( @"zmm_big", "" );
     setdvar( @"hash_3c05d1d16d772c9e", -1 );
@@ -607,6 +607,11 @@ function menu_sr_setup()
     {
         sr.show = "1";
     }
+    sr.fov = nengine_store_get( "fuzspeedrun", "fov" );
+    if ( !( sr.fov === "1" ) )
+    {
+        sr.fov = "0";
+    }
     sr.mode = nengine_store_get( "fuzspeedrun", "mode" );
     if ( !( sr.mode === "pap" || sr.mode === "r5" || sr.mode === "r15" || sr.mode === "r30" || sr.mode === "r50" || sr.mode === "r70" || sr.mode === "r100" ) )
     {
@@ -1045,6 +1050,12 @@ function menu_pause_cmds()
     }
     setdvar( @"zmm_pshow", sr.show );
     setdvar( @"zmm_pmode", sr.mode );
+    // saved choice, not a cg_fov read: getdvarint( @"cg_fov" ) here crashed the map load
+    setdvar( @"zmm_pfov", sr.fov );
+    if ( sr.fov === "1" )
+    {
+        level thread menu_sr_fov_late( sr.host );
+    }
     // set last: Lua waits for this dvar before adding the rows
     setdvar( @"zmm_ptimer", "1" );
     if ( sr.timer === "0" )
@@ -1074,6 +1085,12 @@ function menu_pause_cmds()
                 sr.host iprintlnbold( "^3New mode starts with the next run (Start speedrun)" );
             }
         }
+        if ( !( getdvar( @"zmm_pfov" ) === sr.fov ) )
+        {
+            sr.fov = getdvar( @"zmm_pfov" );
+            menu_pause_save( "fov", sr.fov );
+            level thread menu_sr_fov( sr.fov === "1" );
+        }
         sr.p_cmd = getdvar( @"zmm_paction" );
         if ( sr.p_cmd != "" && !( sr.p_cmd === sr.p_last ) )
         {
@@ -1085,6 +1102,39 @@ function menu_pause_cmds()
         }
         wait 0.1;
     }
+}
+
+// FOV 110 + scale 1.2, or the game's defaults (65, 1); set from GSC and through the console like FuzMenu
+// (a cg_fovscale set from Lua does not take, and SetDvarString on it crashed the game)
+// at load the FOV set did not stick: wait for the host to spawn, then apply
+function menu_sr_fov_late( host )
+{
+    while ( isdefined( host ) && !isalive( host ) )
+    {
+        wait 0.5;
+    }
+    wait 2;
+    if ( isdefined( host ) && level.zmm_sr.fov === "1" )
+    {
+        menu_sr_fov( 1 );
+    }
+}
+
+function menu_sr_fov( on )
+{
+    fov = "65";
+    scale = "1";
+    if ( on )
+    {
+        fov = "110";
+        scale = "1.2";
+    }
+    setdvar( @"cg_fov", fov );
+    setdvar( @"cg_fovscale", scale );
+    // zmm_exec runs one command per value
+    setdvar( @"zmm_exec", "cg_fov " + fov + " " + gettime() );
+    wait 0.25;
+    setdvar( @"zmm_exec", "cg_fovscale " + scale + " " + gettime() );
 }
 
 function menu_pause_save( key, value )

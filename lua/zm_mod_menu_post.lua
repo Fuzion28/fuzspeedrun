@@ -340,7 +340,7 @@ local function prStep()
         c=prCall(c,"getNextSibling")
     end
     if not tail or not prev then return end
-    PR.rows={prTimer(),prToggle("INFINITE GUMS","zmm_pgums"),prMode(),prAction("START SPEEDRUN","start")}
+    PR.rows={prTimer(),prToggle("INFINITE GUMS","zmm_pgums"),prMode(),prToggle("FOV 110","zmm_pfov"),prAction("START SPEEDRUN","start")}
     for _,row in ipairs(PR.rows) do prev=prAdd(list,tail,prev,row) end
     prRefresh()
 end
