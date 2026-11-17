@@ -340,11 +340,11 @@ function menu_welcome()
     // what is loaded, shown on every load
     if ( isdefined( level.zmm_sr ) && level.zmm_sr.gums === "1" )
     {
-        self iprintlnbold( "^5FuzSpeedrun v1.8 ^7- ^3All Gums" );
+        self iprintlnbold( "^5FuzSpeedrun v1.8.1 ^7- ^3All Gums" );
     }
     else
     {
-        self iprintlnbold( "^5FuzSpeedrun v1.8 ^7- ^2No Gums" );
+        self iprintlnbold( "^5FuzSpeedrun v1.8.1 ^7- ^2No Gums" );
     }
 }
 
@@ -772,14 +772,28 @@ function menu_sr_boss_alive()
 {
     sr = level.zmm_sr;
     // the game's boss health bar: while it is up, each player points at the boss it shows
-    // (cleared when the bar hides, before the AI itself dies and the cutscene starts)
+    // the bar stays up until the AI dies at the cutscene, so read its fill like the game does:
+    // width = max( full * health / maxhealth, 1 ), empty when health <= 0 or maxhealth == 1
+    full = 500;
+    if ( isdefined( level.var_14719442b1c9d3ae ) )
+    {
+        full = level.var_14719442b1c9d3ae;
+    }
     foreach ( player in level.players )
     {
-        if ( isdefined( player.var_7fa280bb4c563541 ) )
+        boss = player.var_7fa280bb4c563541;
+        if ( isdefined( boss ) )
         {
             sr.bar_seen = 1;
             sr.boss_seen = 1;
-            return true;
+            if ( !isdefined( boss.health ) || !isdefined( boss.var_bf80442dd2797c82 ) )
+            {
+                return true;
+            }
+            if ( boss.health > 0 && boss.var_bf80442dd2797c82 != 1 && full * boss.health / boss.var_bf80442dd2797c82 > 1 )
+            {
+                return true;
+            }
         }
     }
     if ( istrue( sr.bar_seen ) )
@@ -1179,7 +1193,7 @@ function menu_sr_splice()
         }
         setdvar( @"zmm_session", sr.sid );
     }
-    setdvar( @"zmm_splice", sr.sid + " ^5#" + sr.att + " ^7Speedrun v1.8" );
+    setdvar( @"zmm_splice", sr.sid + " ^5#" + sr.att + " ^7Speedrun v1.8.1" );
 }
 
 function menu_pause_sync( key, value )
